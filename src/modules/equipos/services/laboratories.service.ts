@@ -6,7 +6,7 @@ import { CreateLaboratoryDto } from '../dtos/create-laboratory.dto';
 import { UpdateLaboratoryDto } from '../dtos/update-laboratory.dto';
 
 @Injectable()
-export class LaboratoriesService {
+export class LaboratoryService {
     constructor(
         @InjectRepository(Laboratory)
         private readonly laboratoryRepo: Repository<Laboratory>,
@@ -19,21 +19,21 @@ export class LaboratoriesService {
 
     async findAllLaboratories() {
         return await this.laboratoryRepo.find({
-            relations: ['equipment'],
+            relations: ['equipos'],
             order: { createdAt: 'DESC' },
         });
     }
 
-    async findLaboratoryById(id: string) {
+    async findLaboratoryById(id: number) {
         const lab = await this.laboratoryRepo.findOne({
             where: { id },
-            relations: ['equipment'],
+            relations: ['equipos'],
         });
         if (!lab) throw new NotFoundException(`Laboratory with ID ${id} not found`);
         return lab;
     }
 
-    async updateLaboratory(id: string, updateLaboratoryDto: UpdateLaboratoryDto) {
+    async updateLaboratory(id: number, updateLaboratoryDto: UpdateLaboratoryDto) {
         const lab = await this.findLaboratoryById(id);
         Object.assign(lab, updateLaboratoryDto);
         return await this.laboratoryRepo.save(lab);

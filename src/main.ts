@@ -25,7 +25,7 @@ async function bootstrap() {
     whitelist: true,
     forbidNonWhitelisted: false,
     transform: true,
-  }));
+  }));  
 
   /* Configurando Swagger */
   const config = new DocumentBuilder()

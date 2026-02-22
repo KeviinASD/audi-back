@@ -6,8 +6,10 @@ import { configService, DatabaseConfig } from './config/env.config';
 import { ConfigModule } from '@nestjs/config';
 import { SeguridadModule } from './modules/seguridad/seguridad.module';
 import { EquiposModule } from './modules/equipos/equipos.module';
-import { ReportesModule } from './modules/reportes/reportes.module';
 import dbConfig from './config/db.config';
+import { HardwareModule } from './modules/hardware/hardware.module';
+import { AgentModule } from './modules/agent/agent.module';
+import { SoftwareModule } from './modules/software/software.module';
 
 const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
 
@@ -41,7 +43,10 @@ const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
     UsersModule,
     EquiposModule,
     SeguridadModule,
-    ReportesModule,
+    AgentModule,
+    HardwareModule,
+    SoftwareModule,
+    
   ],
   controllers: [],
   providers: [],

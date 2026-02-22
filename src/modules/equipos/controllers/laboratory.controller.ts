@@ -1,13 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { LaboratoriesService } from '../services/laboratories.service';
+import { LaboratoryService } from '../services/laboratories.service';
 import { CreateLaboratoryDto } from '../dtos/create-laboratory.dto';
 import { UpdateLaboratoryDto } from '../dtos/update-laboratory.dto';
 
 @ApiTags('Laboratories')
 @Controller('laboratorios')
 export class LaboratoriesController {
-    constructor(private readonly laboratoriesService: LaboratoriesService) { }
+    constructor(private readonly laboratoriesService: LaboratoryService) { }
 
     @Post()
     @ApiOperation({ summary: 'Crear laboratorio' })
@@ -27,7 +27,7 @@ export class LaboratoriesController {
     @ApiOperation({ summary: 'Detalle de un laboratorio' })
     @ApiResponse({ status: 200, description: 'Laboratorio encontrado.' })
     @ApiResponse({ status: 404, description: 'Laboratorio no encontrado.' })
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id', ParseIntPipe) id: number) {
         return this.laboratoriesService.findLaboratoryById(id);
     }
 
@@ -35,7 +35,7 @@ export class LaboratoriesController {
     @ApiOperation({ summary: 'Actualizar laboratorio' })
     @ApiResponse({ status: 200, description: 'Laboratorio actualizado.' })
     @ApiResponse({ status: 404, description: 'Laboratorio no encontrado.' })
-    update(@Param('id', ParseUUIDPipe) id: string, @Body() updateLaboratoryDto: UpdateLaboratoryDto) {
+    update(@Param('id', ParseIntPipe) id: number, @Body() updateLaboratoryDto: UpdateLaboratoryDto) {
         return this.laboratoriesService.updateLaboratory(id, updateLaboratoryDto);
     }
 }

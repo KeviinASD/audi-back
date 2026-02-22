@@ -1,49 +1,35 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from "typeorm";
 import { Laboratory } from "./laboratory.entity";
-// import { Report } from "../../reportes/entities/report.entity"; // TODO: Uncomment when Report module is created
 
-@Entity('equipment')
+@Entity()
 export class Equipment {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id: number;
 
     @Column({ unique: true })
-    hostname: string;             // "ELMO" — clave natural del agente
+    code: string;               // "LAB01-PC05" — va en el agente
 
-    @Column({ nullable: true })
-    currentUser: string;          // "elmot" — último usuario logueado
+    @Column()
+    name: string;
 
-    @Column({ nullable: true })
-    ipAddress: string;            // "192.168.100.4"
+    @Column()
+    ubication: string;            // "Laboratorio 1 - Puesto 5"
 
-    @Column({ nullable: true })
-    osVersion: string;            // "Microsoft Windows 11 Home..."
-
-    @Column({ nullable: true })
-    architecture: string;         // "64 bits"
-
-    @ManyToOne(() => Laboratory, lab => lab.equipment, { nullable: true })
+    @ManyToOne(() => Laboratory, lab => lab.equipos)
     laboratory: Laboratory;
-
-    @Column({ nullable: true })
-    laboratoryId: string;
-
-    @Column({ default: 'unknown' })
-    status: string;               // 'online' | 'offline' | 'warning' | 'critical'
-
-    @Column({ nullable: true })
-    lastSeenAt: Date;             // última vez que el agente envió datos
 
     @Column({ default: true })
     isActive: boolean;
+
+    @Column({ nullable: true })
+    lastConnection: Date;         // Se actualiza con cada sync del agente
+
+    @Column({ default: 'sin-datos' })
+    status: string;               // 'operativo' | 'degradado' | 'critico' | 'sin-datos'
 
     @CreateDateColumn()
     createdAt: Date;
 
     @UpdateDateColumn()
     updatedAt: Date;
-
-    // Relaciones hacia otros módulos
-    // @OneToMany(() => Report, r => r.equipment)
-    // reports: Report[];
 }

@@ -4,8 +4,8 @@ import { Equipment } from "./equipment.entity";
 
 @Entity('laboratories')
 export class Laboratory {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id: number;
 
     @Column()
     name: string;                 // e.g. "Laboratorio A", "Sala 201"
@@ -26,5 +26,5 @@ export class Laboratory {
     createdAt: Date;
 
     @OneToMany(() => Equipment, eq => eq.laboratory)
-    equipment: Equipment[];
+    equipos: Equipment[];
 }
