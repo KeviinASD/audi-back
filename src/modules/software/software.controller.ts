@@ -1,6 +1,6 @@
 // software/software.controller.ts
 
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { SoftwareService } from './software.service';
 import { CreateAuthorizedSoftwareDto } from './dto/create-authorized-software.dto';
 
@@ -11,8 +11,13 @@ export class SoftwareController {
 
   // ── Snapshots ──────────────────────────────────────────────────
   @Get('equipment/:equipmentId/latest')
-  getLatest(@Param('equipmentId') equipmentId: number) {
-    return this.softwareService.getLatestSnapshot(+equipmentId);
+  getLatest(@Param('equipmentId', ParseIntPipe) equipmentId: number) {
+    return this.softwareService.getLatestSnapshot(equipmentId);
+  }
+
+  @Get('equipment/:equipmentId/history')
+  getHistory(@Param('equipmentId', ParseIntPipe) equipmentId: number) {
+    return this.softwareService.getSnapshotHistory(equipmentId);
   }
 
   @Get('equipment/:equipmentId/risky')

@@ -69,6 +69,31 @@ export class SoftwareService {
     });
   }
 
+  async getSnapshotHistory(equipmentId: number) {
+    const records = await this.installedRepo.find({
+      where: { equipment: { id: equipmentId } },
+      order: { capturedAt: 'DESC', name: 'ASC' },
+    });
+
+    if (!records.length) return [];
+
+    // Agrupar por capturedAt — cada fecha única representa un sync distinto
+    const grouped = new Map<string, SoftwareInstalled[]>();
+    for (const record of records) {
+      const key = record.capturedAt.toISOString();
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(record);
+    }
+
+    return Array.from(grouped.entries()).map(([capturedAt, items]) => ({
+      capturedAt,
+      totalItems:      items.length,
+      riskyCount:      items.filter(i => i.isRisk).length,
+      unlicensedCount: items.filter(i => i.licenseStatus === LicenseStatus.UNLICENSED).length,
+      items,
+    }));
+  }
+
   async getRiskyByEquipment(equipmentId: number): Promise<SoftwareInstalled[]> {
     return this.installedRepo.find({
       where: { equipment: { id: equipmentId }, isRisk: true },
