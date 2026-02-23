@@ -7,6 +7,7 @@ import { SoftwareModule } from '../software/software.module';
 import { AgentService } from './agent.service';
 import { AgentController } from './agent.controller';
 import { Equipment } from '../equipos/entities/equipment.entity';
+import { ApiKeyGuard } from './guards/api-key.guard';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { Equipment } from '../equipos/entities/equipment.entity';
     SoftwareModule,
   ],
   controllers: [AgentController],
-  providers: [AgentService],
+  providers: [AgentService, ApiKeyGuard],
 })
 export class AgentModule {}

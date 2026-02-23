@@ -5,7 +5,9 @@ import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger
 import { SyncAgentDto } from './dto/sync-agent.dto';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { AgentService } from './agent.service';
+import { Public } from 'src/auth/decorators/public.decorator';
 
+@Public()
 @ApiTags('Agent')
 @ApiSecurity('api-key')
 @Controller('agent')
@@ -23,6 +25,7 @@ export class AgentController {
   @ApiResponse({ status: 401, description: 'Invalid or missing API key.' })
   @ApiResponse({ status: 404, description: 'Equipment code not registered in the system.' })
   sync(@Body() dto: SyncAgentDto) {
+    console.log("first softwart item: ", dto.software?.items[0]);
     return this.agentService.processSync(dto);
   }
 }

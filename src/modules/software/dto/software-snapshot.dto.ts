@@ -2,7 +2,7 @@
 
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum, ValidateNested, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { LicenseStatus } from 'src/common/enums/license-status.enum';
 
 export class SoftwareItemDto {
@@ -20,10 +20,14 @@ export class SoftwareItemDto {
   @IsOptional()
   publisher?: string;
 
-  @ApiProperty({ example: '2024-03-15', description: 'Installation date (YYYY-MM-DD)', required: false })
-  @IsString()
+  @ApiProperty({ example: '2024-03-15', description: 'Installation date (YYYY-MM-DD). Non-date values are stored as null.', required: false })
+  @Transform(({ value }) => {
+    if (!value || typeof value !== 'string') return null;
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : value;
+  })
   @IsOptional()
-  installedAt?: string;
+  installedAt?: string | null;
 
   @ApiProperty({
     example: LicenseStatus.LICENSED,
