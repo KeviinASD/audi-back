@@ -10,6 +10,8 @@ import dbConfig from './config/db.config';
 import { HardwareModule } from './modules/hardware/hardware.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { SoftwareModule } from './modules/software/software.module';
+import { SecurityModule } from './modules/security/security.module';
+import { PerformanceModule } from './modules/performance/performance.module';
 import { SeedModule } from './config/seeding/seed.module';
 
 const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
@@ -47,6 +49,8 @@ const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
     AgentModule,
     HardwareModule,
     SoftwareModule,
+    SecurityModule,
+    PerformanceModule,
     SeedModule,
 
   ],

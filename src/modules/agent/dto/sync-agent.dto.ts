@@ -5,6 +5,8 @@ import { IsString, IsNotEmpty, IsEnum, IsDateString, IsOptional, ValidateNested 
 import { Type } from 'class-transformer';
 import { HardwareSnapshotDto } from '../../hardware/dto/hardware-snapshot.dto';
 import { SoftwareSnapshotDto } from '../../software/dto/software-snapshot.dto';
+import { SecuritySnapshotDto } from '../../security/dto/security-snapshot.dto';
+import { PerformanceSnapshotDto } from '../../performance/dto/performance-snapshot.dto';
 
 export class SyncAgentDto {
   @ApiProperty({
@@ -62,4 +64,48 @@ export class SyncAgentDto {
   @ValidateNested()
   @Type(() => SoftwareSnapshotDto)
   software?: SoftwareSnapshotDto;
+
+  @ApiProperty({
+    type: () => SecuritySnapshotDto,
+    required: false,
+    description: 'Security snapshot. Required when mode is "full".',
+    example: {
+      os: { name: 'Windows 10 Pro', version: '10.0.19045', build: '19045.3803', architecture: '64-bit' },
+      windowsUpdate: { lastUpdateDate: '2025-11-10', daysSinceLastUpdate: 104, pendingUpdatesCount: 3, isCriticalUpdatePending: true },
+      antivirus: { installed: true, enabled: true, name: 'Windows Defender', version: '4.18.2310.9', definitionsUpdated: true, lastScanDate: '2026-02-21' },
+      firewall: { enabled: true, domainEnabled: true, privateEnabled: true, publicEnabled: true },
+      passwordPolicy: { minLength: 6, maxAgeDays: 0, minAgeDays: 0, complexityEnabled: false, lockoutThreshold: 0 },
+      localUsers: [{ username: 'alumno', isAdmin: false, isEnabled: true, lastLogin: '2026-02-21T14:30:00Z', passwordNeverExpires: false }],
+      lastLoggedUser: 'alumno',
+      lastLoginDate: '2026-02-21T14:30:00Z',
+      currentLoggedUser: 'Administrador',
+      uacEnabled: true,
+      rdpEnabled: false,
+      remoteRegistryEnabled: false,
+    },
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SecuritySnapshotDto)
+  security?: SecuritySnapshotDto;
+
+  @ApiProperty({
+    type: () => PerformanceSnapshotDto,
+    required: false,
+    description: 'Performance snapshot. Required in full mode, optional in quick mode.',
+    example: {
+      cpu: { usagePercent: 18.4, temperatureC: 47.0 },
+      ram: { totalGB: 8, usedGB: 3.8 },
+      disk: { totalGB: 500, usedGB: 210.4, temperatureC: 38.0, readSpeedMBs: 85.2, writeSpeedMBs: 42.6 },
+      network: { sentMBs: 0.12, receivedMBs: 0.45, adapterName: 'Ethernet' },
+      uptimeSeconds: 25200,
+      lastBootTime: '2026-02-22T00:00:00.000Z',
+      topProcessesByCpu: [{ pid: 1234, name: 'chrome.exe', cpuPercent: 8.2, ramMB: 412, status: 'running' }],
+      topProcessesByRam: [{ pid: 1234, name: 'chrome.exe', cpuPercent: 8.2, ramMB: 412, status: 'running' }],
+    },
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PerformanceSnapshotDto)
+  performance?: PerformanceSnapshotDto;
 }
