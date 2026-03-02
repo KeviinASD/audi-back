@@ -1,8 +1,8 @@
 // software/software.service.ts
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { differenceInDays } from 'date-fns';
 import { SoftwareInstalled } from './entities/software-installed.entity';
 import { AuthorizedSoftware } from './entities/authorized-software.entity';
@@ -15,12 +15,64 @@ import { checkLicenseStatus } from './catalogs/license-catalog';
 @Injectable()
 export class SoftwareService {
 
+  private readonly logger = new Logger(SoftwareService.name);
+
   constructor(
     @InjectRepository(SoftwareInstalled)
     private readonly installedRepo: Repository<SoftwareInstalled>,
     @InjectRepository(AuthorizedSoftware)
     private readonly authorizedRepo: Repository<AuthorizedSoftware>,
   ) { }
+
+  // ── Startup backfill (deshabilitado — datos ya sincronizados) ─
+  // Para re-ejecutar: añadir implements OnApplicationBootstrap y descomentar la llamada.
+  // onApplicationBootstrap(): void {
+  //   this.backfillLicenseStatus().catch(err => this.logger.error('backfill failed', err));
+  // }
+
+  private async backfillLicenseStatus(): Promise<void> {
+    const BATCH = 500;
+    let offset  = 0;
+
+    // Agrupa los IDs que necesitan cambiar por status destino
+    const byStatus = new Map<LicenseStatus, number[]>();
+
+    while (true) {
+      const batch = await this.installedRepo.find({
+        select: ['id', 'name', 'publisher', 'licenseStatus'],
+        skip: offset,
+        take: BATCH,
+      });
+
+      if (!batch.length) break;
+
+      for (const record of batch) {
+        const correct = checkLicenseStatus(record.name, record.publisher);
+        if (record.licenseStatus !== correct) {
+          const ids = byStatus.get(correct) ?? [];
+          ids.push(record.id);
+          byStatus.set(correct, ids);
+        }
+      }
+
+      if (batch.length < BATCH) break;
+      offset += BATCH;
+    }
+
+    if (!byStatus.size) {
+      this.logger.log('SoftwareInstalled backfill: already up to date.');
+      return;
+    }
+
+    // Un UPDATE por grupo de status — mucho más eficiente que save() individual
+    let updated = 0;
+    for (const [status, ids] of byStatus.entries()) {
+      await this.installedRepo.update({ id: In(ids) }, { licenseStatus: status });
+      updated += ids.length;
+    }
+
+    this.logger.log(`SoftwareInstalled backfill: ${updated} records updated.`);
+  }
 
   // ── Escritura — solo llamado por AgentService ─────────────────
 
@@ -33,17 +85,17 @@ export class SoftwareService {
     const whitelist = await this.authorizedRepo.find({ where: { isActive: true } });
 
     const records = dto.items.map(item => {
-      const isWhitelisted   = this.checkWhitelist(item.name, whitelist);
-      const licenseStatus   = checkLicenseStatus(item.name, item.publisher);
-      const isRisk          = this.calculateRisk(item, isWhitelisted);
+      const isWhitelisted = this.checkWhitelist(item.name, whitelist);
+      const licenseStatus = checkLicenseStatus(item.name, item.publisher);
+      const isRisk = this.calculateRisk(item, isWhitelisted);
 
       return this.installedRepo.create({
         equipment,
         capturedAt,
-        name:          item.name,
-        version:       item.version ?? null,
-        publisher:     item.publisher ?? null,
-        installedAt:   item.installedAt ? new Date(item.installedAt) : null,
+        name: item.name,
+        version: item.version ?? null,
+        publisher: item.publisher ?? null,
+        installedAt: item.installedAt ? new Date(item.installedAt) : null,
         licenseStatus,
         isWhitelisted,
         isRisk,
