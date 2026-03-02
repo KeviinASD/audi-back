@@ -30,7 +30,7 @@ export class SoftwareItemDto {
   installedAt?: string | null;
 
   @ApiProperty({
-    example: LicenseStatus.LICENSED,
+    example: LicenseStatus.FREE,
     enum: LicenseStatus,
     description: 'License status of the software. Defaults to "unknown" if not provided.',
     required: false,

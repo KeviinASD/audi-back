@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Equipment } from '../entities/equipment.entity';
 import { CreateEquipmentDto } from '../dtos/create-equipment.dto';
 import { UpdateEquipmentDto } from '../dtos/update-equipment.dto';
@@ -35,8 +35,21 @@ export class EquipmentsService {
         return await this.equipmentRepo.save(equipment);
     }
 
-    async findAll() {
+    async findAll(search?: string, labId?: number) {
+        const labCondition = labId ? { laboratory: { id: labId } } : {};
+
+        const where = search
+            ? [
+                { ...labCondition, name:      ILike(`%${search}%`) },
+                { ...labCondition, code:      ILike(`%${search}%`) },
+                { ...labCondition, ubication: ILike(`%${search}%`) },
+              ]
+            : labId
+              ? labCondition
+              : undefined;
+
         return await this.equipmentRepo.find({
+            where,
             relations: ['laboratory'],
             order: { createdAt: 'DESC' },
         });

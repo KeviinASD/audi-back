@@ -10,6 +10,7 @@ import { SoftwareSnapshotDto, SoftwareItemDto } from './dto/software-snapshot.dt
 import { CreateAuthorizedSoftwareDto } from './dto/create-authorized-software.dto';
 import { Equipment } from '../equipos/entities/equipment.entity';
 import { LicenseStatus } from 'src/common/enums/license-status.enum';
+import { checkLicenseStatus } from './catalogs/license-catalog';
 
 @Injectable()
 export class SoftwareService {
@@ -32,17 +33,18 @@ export class SoftwareService {
     const whitelist = await this.authorizedRepo.find({ where: { isActive: true } });
 
     const records = dto.items.map(item => {
-      const isWhitelisted = this.checkWhitelist(item.name, whitelist);
-      const isRisk = this.calculateRisk(item, isWhitelisted);
+      const isWhitelisted   = this.checkWhitelist(item.name, whitelist);
+      const licenseStatus   = checkLicenseStatus(item.name, item.publisher);
+      const isRisk          = this.calculateRisk(item, isWhitelisted);
 
       return this.installedRepo.create({
         equipment,
         capturedAt,
-        name: item.name,
-        version: item.version ?? null,
-        publisher: item.publisher ?? null,
-        installedAt: item.installedAt ? new Date(item.installedAt) : null,
-        licenseStatus: item.licenseStatus ?? LicenseStatus.UNKNOWN,
+        name:          item.name,
+        version:       item.version ?? null,
+        publisher:     item.publisher ?? null,
+        installedAt:   item.installedAt ? new Date(item.installedAt) : null,
+        licenseStatus,
         isWhitelisted,
         isRisk,
       });

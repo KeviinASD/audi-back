@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { EquipmentsService } from '../services/equipment.service';
 import { CreateEquipmentDto } from '../dtos/create-equipment.dto';
 import { UpdateEquipmentDto } from '../dtos/update-equipment.dto';
@@ -19,9 +19,17 @@ export class EquipmentController {
 
     @Get()
     @ApiOperation({ summary: 'List all equipment with current status' })
+    @ApiQuery({ name: 'search', required: false, description: 'Filtrar por nombre, código o ubicación' })
+    @ApiQuery({ name: 'labId',  required: false, type: Number, description: 'Filtrar por laboratorio' })
     @ApiResponse({ status: 200, description: 'Equipment list retrieved successfully.' })
-    findAll() {
-        return this.equipmentsService.findAll();
+    findAll(
+        @Query('search') search?: string,
+        @Query('labId')  labId?: string,
+    ) {
+        return this.equipmentsService.findAll(
+            search?.trim() || undefined,
+            labId ? +labId : undefined,
+        );
     }
 
     @Get(':id')
