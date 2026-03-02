@@ -95,33 +95,38 @@ export class PerformanceService {
     from: Date,
     to: Date,
   ): Promise<{ avgCpu: number; avgRam: number; avgDisk: number }> {
-    const result = await this.repo
-      .createQueryBuilder('ps')
-      .select('AVG(ps.cpu_usage_percent)', 'avgCpu')
-      .addSelect('AVG(ps.ram_usage_percent)', 'avgRam')
-      .addSelect('AVG(ps.disk_usage_percent)', 'avgDisk')
-      .where('ps.equipment_id = :equipmentId', { equipmentId })
-      .andWhere('ps.captured_at BETWEEN :from AND :to', { from, to })
-      .getRawOne();
+    const snapshots = await this.repo.find({
+      where: { equipment: { id: equipmentId }, capturedAt: Between(from, to) },
+    });
+
+    const avg = (vals: number[]) =>
+      vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
 
     return {
-      avgCpu:  parseFloat(result.avgCpu ?? '0'),
-      avgRam:  parseFloat(result.avgRam ?? '0'),
-      avgDisk: parseFloat(result.avgDisk ?? '0'),
+      avgCpu:  avg(snapshots.map(s => Number(s.cpuUsagePercent)  || 0)),
+      avgRam:  avg(snapshots.map(s => Number(s.ramUsagePercent)  || 0)),
+      avgDisk: avg(snapshots.map(s => Number(s.diskUsagePercent) || 0)),
     };
   }
 
   async getEquipmentsWithAlerts(): Promise<PerformanceSnapshot[]> {
-    return this.repo
-      .createQueryBuilder('ps')
-      .distinctOn(['ps.equipment_id'])
-      .leftJoinAndSelect('ps.equipment', 'equipment')
-      .where(
-        'ps.has_cpu_alert = true OR ps.has_ram_alert = true OR ' +
-        'ps.has_disk_alert = true OR ps.has_thermal_alert = true',
-      )
-      .orderBy('ps.equipment_id')
-      .addOrderBy('ps.captured_at', 'DESC')
-      .getMany();
+    const snapshots = await this.repo.find({
+      where: [
+        { hasCpuAlert:     true },
+        { hasRamAlert:     true },
+        { hasDiskAlert:    true },
+        { hasThermalAlert: true },
+      ],
+      relations: ['equipment'],
+      order: { capturedAt: 'DESC' },
+    });
+
+    // Keep only the latest snapshot per equipment
+    const seen = new Set<number>();
+    return snapshots.filter(s => {
+      if (seen.has(s.equipment.id)) return false;
+      seen.add(s.equipment.id);
+      return true;
+    });
   }
 }

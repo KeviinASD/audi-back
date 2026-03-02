@@ -75,14 +75,18 @@ export class HardwareService {
   }
 
   async getObsoleteEquipments(): Promise<HardwareSnapshot[]> {
-    return this.repo
-      .createQueryBuilder('hs')
-      .distinctOn(['hs.equipment_id'])
-      .leftJoinAndSelect('hs.equipment', 'equipment')
-      .where('hs.is_obsolete = true')
-      .orderBy('hs.equipment_id')
-      .addOrderBy('hs.captured_at', 'DESC')
-      .getMany();
+    const snapshots = await this.repo.find({
+      where: { isObsolete: true },
+      relations: ['equipment'],
+      order: { capturedAt: 'DESC' },
+    });
+
+    const seen = new Set<number>();
+    return snapshots.filter(s => {
+      if (seen.has(s.equipment.id)) return false;
+      seen.add(s.equipment.id);
+      return true;
+    });
   }
 
   // ── Lógica interna ────────────────────────────────────────────
@@ -93,10 +97,15 @@ export class HardwareService {
       ? parseInt(dto.physicalEquipment.manufactureYear.substring(0, 4))
       : null;
 
-    const tooOld          = manufactureYear ? (currentYear - manufactureYear) > 5 : false;
-    const insufficientRam = dto.ram.totalGB < 4;
-    const mechanicalDisk  = dto.disk.type?.toUpperCase() === 'HDD';
+    // Antigüedad > 7 años: equipo demasiado viejo para software académico moderno
+    const tooOld = manufactureYear ? (currentYear - manufactureYear) > 7 : false;
 
-    return tooOld || insufficientRam || mechanicalDisk;
+    // RAM < 4 GB: insuficiente para ejecutar SO + navegador + herramientas de desarrollo
+    const insufficientRam = dto.ram.totalGB < 4;
+
+    // HDD no es criterio de obsolescencia — es un factor de rendimiento
+    // (se registra en PerformanceSnapshot y puede flaguearse desde ahí)
+
+    return tooOld || insufficientRam;
   }
 }

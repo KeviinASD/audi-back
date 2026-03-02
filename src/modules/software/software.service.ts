@@ -19,7 +19,7 @@ export class SoftwareService {
     private readonly installedRepo: Repository<SoftwareInstalled>,
     @InjectRepository(AuthorizedSoftware)
     private readonly authorizedRepo: Repository<AuthorizedSoftware>,
-  ) {}
+  ) { }
 
   // ── Escritura — solo llamado por AgentService ─────────────────
 
@@ -33,15 +33,15 @@ export class SoftwareService {
 
     const records = dto.items.map(item => {
       const isWhitelisted = this.checkWhitelist(item.name, whitelist);
-      const isRisk        = this.calculateRisk(item, isWhitelisted);
+      const isRisk = this.calculateRisk(item, isWhitelisted);
 
       return this.installedRepo.create({
         equipment,
         capturedAt,
-        name:          item.name,
-        version:       item.version ?? null,
-        publisher:     item.publisher ?? null,
-        installedAt:   item.installedAt ? new Date(item.installedAt) : null,
+        name: item.name,
+        version: item.version ?? null,
+        publisher: item.publisher ?? null,
+        installedAt: item.installedAt ? new Date(item.installedAt) : null,
         licenseStatus: item.licenseStatus ?? LicenseStatus.UNKNOWN,
         isWhitelisted,
         isRisk,
@@ -87,8 +87,8 @@ export class SoftwareService {
 
     return Array.from(grouped.entries()).map(([capturedAt, items]) => ({
       capturedAt,
-      totalItems:      items.length,
-      riskyCount:      items.filter(i => i.isRisk).length,
+      totalItems: items.length,
+      riskyCount: items.filter(i => i.isRisk).length,
       unlicensedCount: items.filter(i => i.licenseStatus === LicenseStatus.UNLICENSED).length,
       items,
     }));
@@ -128,10 +128,10 @@ export class SoftwareService {
 
   async addToWhitelist(dto: CreateAuthorizedSoftwareDto): Promise<AuthorizedSoftware> {
     const entry = this.authorizedRepo.create({
-      name:        dto.name,
-      publisher:   dto.publisher ?? null,
+      name: dto.name,
+      publisher: dto.publisher ?? null,
       description: dto.description ?? null,
-      laboratory:  dto.laboratoryId ? { id: dto.laboratoryId } as any : null,
+      laboratory: dto.laboratoryId ? { id: dto.laboratoryId } as any : null,
     });
     return this.authorizedRepo.save(entry);
   }
@@ -155,8 +155,8 @@ export class SoftwareService {
     // Sin fecha de instalación → riesgo por defecto
     if (!item.installedAt) return true;
 
-    // Solo es riesgo si lleva más de 4 meses instalado
+    // Solo es riesgo si lleva más de 6 meses instalado
     const daysInstalled = differenceInDays(new Date(), new Date(item.installedAt));
-    return daysInstalled > 120;
+    return daysInstalled > 180;
   }
 }

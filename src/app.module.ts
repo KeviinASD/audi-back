@@ -12,6 +12,7 @@ import { AgentModule } from './modules/agent/agent.module';
 import { SoftwareModule } from './modules/software/software.module';
 import { SecurityModule } from './modules/security/security.module';
 import { PerformanceModule } from './modules/performance/performance.module';
+import { AuditAnalysisModule } from './modules/audit-analysis/audit-analysis.module';
 import { SeedModule } from './config/seeding/seed.module';
 
 const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
@@ -51,6 +52,7 @@ const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
     SoftwareModule,
     SecurityModule,
     PerformanceModule,
+    AuditAnalysisModule,
     SeedModule,
 
   ],

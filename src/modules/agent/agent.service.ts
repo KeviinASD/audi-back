@@ -11,6 +11,7 @@ import { HardwareSnapshot } from '../hardware/entities/hardware-snapshot.entity'
 import { SecuritySnapshot } from '../security/entities/security-snapshot.entity';
 import { SyncAgentDto } from './dto/sync-agent.dto';
 import { Equipment } from '../equipos/entities/equipment.entity';
+import { calculateEquipmentStatus } from 'src/common/utils/equipment-status.util';
 
 @Injectable()
 export class AgentService {
@@ -55,7 +56,7 @@ export class AgentService {
       ]);
 
       // 3. Recalcular estado del equipo con hardware + seguridad
-      const newStatus = this.calculateEquipmentStatus(hardwareSnapshot, securitySnapshot);
+      const newStatus = calculateEquipmentStatus(hardwareSnapshot, securitySnapshot);
 
       await this.equipmentRepo.update(equipment.id, {
         lastConnection: capturedAt,
@@ -82,7 +83,7 @@ export class AgentService {
 
   // ── Cálculo de estado del equipo ──────────────────────────────
 
-  private calculateEquipmentStatus(
+  /* private calculateEquipmentStatus(
     hw: HardwareSnapshot,
     sec: SecuritySnapshot,
   ): 'operative' | 'degraded' | 'critical' {
@@ -102,5 +103,5 @@ export class AgentService {
     if (highTemp || highRamUsage || criticalUpdate || longNoUpdate) return 'degraded';
 
     return 'operative';
-  }
+  } */
 }

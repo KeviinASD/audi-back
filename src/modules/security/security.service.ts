@@ -96,36 +96,39 @@ export class SecurityService {
   }
 
   async getEquipmentsWithRisk(): Promise<SecuritySnapshot[]> {
-    return this.repo
-      .createQueryBuilder('ss')
-      .distinctOn(['ss.equipment_id'])
-      .leftJoinAndSelect('ss.equipment', 'equipment')
-      .where('ss.has_security_risk = true')
-      .orderBy('ss.equipment_id')
-      .addOrderBy('ss.captured_at', 'DESC')
-      .getMany();
+    const snapshots = await this.repo.find({
+      where: { hasSecurityRisk: true },
+      relations: ['equipment'],
+      order: { capturedAt: 'DESC' },
+    });
+    return this.latestPerEquipment(snapshots);
   }
 
   async getEquipmentsWithoutAntivirus(): Promise<SecuritySnapshot[]> {
-    return this.repo
-      .createQueryBuilder('ss')
-      .distinctOn(['ss.equipment_id'])
-      .leftJoinAndSelect('ss.equipment', 'equipment')
-      .where('ss.antivirus_enabled = false')
-      .orderBy('ss.equipment_id')
-      .addOrderBy('ss.captured_at', 'DESC')
-      .getMany();
+    const snapshots = await this.repo.find({
+      where: { antivirusEnabled: false },
+      relations: ['equipment'],
+      order: { capturedAt: 'DESC' },
+    });
+    return this.latestPerEquipment(snapshots);
   }
 
   async getEquipmentsWithPendingUpdates(): Promise<SecuritySnapshot[]> {
-    return this.repo
-      .createQueryBuilder('ss')
-      .distinctOn(['ss.equipment_id'])
-      .leftJoinAndSelect('ss.equipment', 'equipment')
-      .where('ss.is_critical_update_pending = true')
-      .orderBy('ss.equipment_id')
-      .addOrderBy('ss.captured_at', 'DESC')
-      .getMany();
+    const snapshots = await this.repo.find({
+      where: { isCriticalUpdatePending: true },
+      relations: ['equipment'],
+      order: { capturedAt: 'DESC' },
+    });
+    return this.latestPerEquipment(snapshots);
+  }
+
+  private latestPerEquipment(snapshots: SecuritySnapshot[]): SecuritySnapshot[] {
+    const seen = new Set<number>();
+    return snapshots.filter(s => {
+      if (seen.has(s.equipment.id)) return false;
+      seen.add(s.equipment.id);
+      return true;
+    });
   }
 
   // ── Lógica interna ────────────────────────────────────────────
