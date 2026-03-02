@@ -178,9 +178,7 @@ Genera el análisis formal de auditoría siguiendo el formato JSON indicado.
 `.trim();
 
     const { text, tokensUsed } = await this.aiProvider.call(systemPrompt, userMessage);
-    console.log('Respuesta cruda del proveedor de IA:', text);
     const analysis: AiAnalysisResult = JSON.parse(this.stripMarkdown(text));
-    console.log('Análisis parseado:', analysis);
     return { analysis, tokensUsed };
   }
 
