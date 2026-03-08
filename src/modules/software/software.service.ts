@@ -1,6 +1,6 @@
 // software/software.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { differenceInDays } from 'date-fns';
@@ -13,7 +13,7 @@ import { LicenseStatus } from 'src/common/enums/license-status.enum';
 import { checkLicenseStatus } from './catalogs/license-catalog';
 
 @Injectable()
-export class SoftwareService {
+export class SoftwareService implements OnApplicationBootstrap {
 
   private readonly logger = new Logger(SoftwareService.name);
 
@@ -24,15 +24,17 @@ export class SoftwareService {
     private readonly authorizedRepo: Repository<AuthorizedSoftware>,
   ) { }
 
-  // ── Startup backfill (deshabilitado — datos ya sincronizados) ─
-  // Para re-ejecutar: añadir implements OnApplicationBootstrap y descomentar la llamada.
-  // onApplicationBootstrap(): void {
-  //   this.backfillLicenseStatus().catch(err => this.logger.error('backfill failed', err));
-  // }
+  // ── Startup backfills ─────────────────────────────────────────
+  // Comentar cada línea una vez que los datos queden sincronizados.
+
+  onApplicationBootstrap(): void {
+    // this.backfillLicenseStatus().catch(err => this.logger.error('backfill licenseStatus failed', err));
+    // this.backfillIsRisk().catch(err => this.logger.error('backfill isRisk failed', err));
+  }
 
   private async backfillLicenseStatus(): Promise<void> {
     const BATCH = 500;
-    let offset  = 0;
+    let offset = 0;
 
     // Agrupa los IDs que necesitan cambiar por status destino
     const byStatus = new Map<LicenseStatus, number[]>();
@@ -72,6 +74,49 @@ export class SoftwareService {
     }
 
     this.logger.log(`SoftwareInstalled backfill: ${updated} records updated.`);
+  }
+
+  private async backfillIsRisk(): Promise<void> {
+    const BATCH = 500;
+    let offset = 0;
+    const toTrue: number[] = [];
+    const toFalse: number[] = [];
+
+    while (true) {
+      const batch = await this.installedRepo.find({
+        select: ['id', 'installedAt', 'isWhitelisted', 'isRisk'],
+        skip: offset,
+        take: BATCH,
+      });
+
+      if (!batch.length) break;
+
+      for (const record of batch) {
+        const correct = this.riskFromRecord(record.installedAt, record.isWhitelisted);
+        if (record.isRisk !== correct) {
+          (correct ? toTrue : toFalse).push(record.id);
+        }
+      }
+
+      if (batch.length < BATCH) break;
+      offset += BATCH;
+    }
+
+    if (toTrue.length) await this.installedRepo.update({ id: In(toTrue) }, { isRisk: true });
+    if (toFalse.length) await this.installedRepo.update({ id: In(toFalse) }, { isRisk: false });
+
+    const updated = toTrue.length + toFalse.length;
+    if (!updated) {
+      this.logger.log('isRisk backfill: already up to date.');
+    } else {
+      this.logger.log(`isRisk backfill: ${updated} records updated (→risk: ${toTrue.length}, →safe: ${toFalse.length}).`);
+    }
+  }
+
+  private riskFromRecord(installedAt: Date | null, isWhitelisted: boolean): boolean {
+    if (isWhitelisted) return false;
+    if (!installedAt) return true;
+    return differenceInDays(new Date(), installedAt) > 180;
   }
 
   // ── Escritura — solo llamado por AgentService ─────────────────
@@ -209,8 +254,8 @@ export class SoftwareService {
     // Sin fecha de instalación → riesgo por defecto
     if (!item.installedAt) return true;
 
-    // Solo es riesgo si lleva más de 6 meses instalado
+    // Solo es riesgo si lleva más de 8 meses instalado
     const daysInstalled = differenceInDays(new Date(), new Date(item.installedAt));
-    return daysInstalled > 180;
+    return daysInstalled > 240;
   }
 }

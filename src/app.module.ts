@@ -14,6 +14,7 @@ import { SecurityModule } from './modules/security/security.module';
 import { PerformanceModule } from './modules/performance/performance.module';
 import { AuditAnalysisModule } from './modules/audit-analysis/audit-analysis.module';
 import { SeedModule } from './config/seeding/seed.module';
+import { DevModule } from './modules/dev/dev.module';
 
 const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
 
@@ -54,6 +55,7 @@ const config: DatabaseConfig = configService.get<DatabaseConfig>('DATABASE');
     PerformanceModule,
     AuditAnalysisModule,
     SeedModule,
+    DevModule,
 
   ],
   controllers: [],

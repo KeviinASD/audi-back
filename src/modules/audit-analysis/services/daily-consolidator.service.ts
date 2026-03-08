@@ -2,7 +2,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { differenceInDays } from 'date-fns';
 import { Equipment } from 'src/modules/equipos/entities/equipment.entity';
 import { HardwareSnapshot } from 'src/modules/hardware/entities/hardware-snapshot.entity';
@@ -51,12 +51,16 @@ export class DailyConsolidatorService {
       );
     }
 
-    const laboratory  = equipments[0].laboratory;
-    const upTo        = this.utcEndOfDay(date);
-    const upToPrevDay = this.utcEndOfDay(this.utcPrevDay(date));
+    const laboratory   = equipments[0].laboratory;
+    const dayStart     = this.utcStartOfDay(date);
+    const dayEnd       = this.utcEndOfDay(date);
+    const prevDayStart = this.utcStartOfDay(this.utcPrevDay(date));
+    const prevDayEnd   = this.utcEndOfDay(this.utcPrevDay(date));
 
     const items = await Promise.all(
-      equipments.map(eq => this.buildHeatMapItem(eq, upTo, upToPrevDay)),
+      equipments.map(eq =>
+        this.buildHeatMapItem(eq, dayStart, dayEnd, prevDayStart, prevDayEnd),
+      ),
     );
 
     return {
@@ -69,20 +73,22 @@ export class DailyConsolidatorService {
 
   private async buildHeatMapItem(
     equipment: Equipment,
-    upTo: Date,
-    upToPrevDay: Date,
+    dayStart: Date,
+    dayEnd: Date,
+    prevDayStart: Date,
+    prevDayEnd: Date,
   ): Promise<EquipmentHeatMapItem> {
 
     const [hardware, security, prevHardware, prevSecurity, riskyAppsCount, lastSync] =
       await Promise.all([
-        this.getLatestUpTo(this.hardwareRepo, equipment.id, upTo),
-        this.getLatestUpTo(this.securityRepo, equipment.id, upTo),
-        this.getLatestUpTo(this.hardwareRepo, equipment.id, upToPrevDay),
-        this.getLatestUpTo(this.securityRepo, equipment.id, upToPrevDay),
+        this.getLatestUpTo(this.hardwareRepo, equipment.id, dayStart, dayEnd),
+        this.getLatestUpTo(this.securityRepo, equipment.id, dayStart, dayEnd),
+        this.getLatestUpTo(this.hardwareRepo, equipment.id, prevDayStart, prevDayEnd),
+        this.getLatestUpTo(this.securityRepo, equipment.id, prevDayStart, prevDayEnd),
         this.softwareRepo.count({
           where: { equipment: { id: equipment.id }, isRisk: true },
         }),
-        this.getLastSyncDate(equipment.id, upTo),
+        this.getLastSyncDate(equipment.id, dayStart, dayEnd),
       ]);
 
     const currentStatus  = calculateEquipmentStatus(hardware, security);
@@ -120,17 +126,19 @@ export class DailyConsolidatorService {
       throw new NotFoundException(`Equipment ${equipmentId} not found or inactive`);
     }
 
-    const upTo        = this.utcEndOfDay(date);
-    const upToPrevDay = this.utcEndOfDay(this.utcPrevDay(date));
+    const dayStart     = this.utcStartOfDay(date);
+    const dayEnd       = this.utcEndOfDay(date);
+    const prevDayStart = this.utcStartOfDay(this.utcPrevDay(date));
+    const prevDayEnd   = this.utcEndOfDay(this.utcPrevDay(date));
 
     const [hardware, softwareItems, security, performance, prevHardware, prevSecurity] =
       await Promise.all([
-        this.getLatestUpTo(this.hardwareRepo,    equipment.id, upTo),
-        this.getSoftwareUpTo(equipment.id, upTo),
-        this.getLatestUpTo(this.securityRepo,    equipment.id, upTo),
-        this.getLatestUpTo(this.performanceRepo, equipment.id, upTo),
-        this.getLatestUpTo(this.hardwareRepo,    equipment.id, upToPrevDay),
-        this.getLatestUpTo(this.securityRepo,    equipment.id, upToPrevDay),
+        this.getLatestUpTo(this.hardwareRepo,    equipment.id, dayStart, dayEnd),
+        this.getSoftwareUpTo(equipment.id, dayStart, dayEnd),
+        this.getLatestUpTo(this.securityRepo,    equipment.id, dayStart, dayEnd),
+        this.getLatestUpTo(this.performanceRepo, equipment.id, dayStart, dayEnd),
+        this.getLatestUpTo(this.hardwareRepo,    equipment.id, prevDayStart, prevDayEnd),
+        this.getLatestUpTo(this.securityRepo,    equipment.id, prevDayStart, prevDayEnd),
       ]);
 
     const currentStatus  = calculateEquipmentStatus(hardware, security);
@@ -164,20 +172,21 @@ export class DailyConsolidatorService {
   private async getLatestUpTo<T extends { capturedAt: Date }>(
     repo: Repository<T>,
     equipmentId: number,
-    upTo: Date,
+    from: Date,
+    to: Date,
   ): Promise<T | null> {
     return repo.findOne({
       where: {
         equipment: { id: equipmentId } as any,
-        capturedAt: LessThanOrEqual(upTo),
+        capturedAt: Between(from, to),
       } as any,
       order: { capturedAt: 'DESC' } as any,
     });
   }
 
-  private async getSoftwareUpTo(equipmentId: number, upTo: Date) {
+  private async getSoftwareUpTo(equipmentId: number, from: Date, to: Date) {
     const latest = await this.softwareRepo.findOne({
-      where: { equipment: { id: equipmentId }, capturedAt: LessThanOrEqual(upTo) },
+      where: { equipment: { id: equipmentId }, capturedAt: Between(from, to) },
       order: { capturedAt: 'DESC' },
     });
 
@@ -195,11 +204,11 @@ export class DailyConsolidatorService {
     return { latest, riskyCount, totalCount };
   }
 
-  private async getLastSyncDate(equipmentId: number, upTo: Date): Promise<Date | null> {
+  private async getLastSyncDate(equipmentId: number, from: Date, to: Date): Promise<Date | null> {
     const snap = await this.hardwareRepo.findOne({
       where: {
         equipment: { id: equipmentId } as any,
-        capturedAt: LessThanOrEqual(upTo),
+        capturedAt: Between(from, to),
       } as any,
       order: { capturedAt: 'DESC' } as any,
     });
@@ -207,13 +216,14 @@ export class DailyConsolidatorService {
   }
 
   // ── Helpers de fecha (UTC) ────────────────────────────────────
-  // new Date('2026-03-01') se parsea como medianoche UTC.
-  // endOfDay() de date-fns usa el timezone LOCAL del servidor, lo que
-  // puede cortar datos capturados después de las 00:00 hora local.
-  // Estos helpers operan puramente en UTC para evitar ese desfase.
+
+  private utcStartOfDay(date: Date): Date {
+    const d = date.toISOString().split('T')[0];
+    return new Date(d + 'T00:00:00.000Z');
+  }
 
   private utcEndOfDay(date: Date): Date {
-    const d = date.toISOString().split('T')[0]; // '2026-03-01'
+    const d = date.toISOString().split('T')[0];
     return new Date(d + 'T23:59:59.999Z');
   }
 
