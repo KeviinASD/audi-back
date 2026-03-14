@@ -35,7 +35,7 @@ export class AiAuditReport {
   @JoinColumn({ name: 'laboratory_id' })
   laboratory: Laboratory | null;
 
-  @ManyToOne(() => Equipment, { nullable: true, eager: false })
+  @ManyToOne(() => Equipment, { nullable: true, eager: false, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'equipment_id' })
   equipment: Equipment | null;
 

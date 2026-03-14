@@ -13,7 +13,7 @@ export class AuditFinding {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Equipment, { nullable: false, eager: false })
+  @ManyToOne(() => Equipment, { nullable: false, eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'equipment_id' })
   equipment: Equipment;
 

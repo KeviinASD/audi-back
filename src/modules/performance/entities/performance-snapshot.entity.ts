@@ -19,7 +19,7 @@ export class PerformanceSnapshot {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Equipment, { eager: false, nullable: false })
+  @ManyToOne(() => Equipment, { eager: false, nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'equipment_id' })
   equipment: Equipment;
 
