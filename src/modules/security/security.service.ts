@@ -95,31 +95,31 @@ export class SecurityService {
     });
   }
 
-  async getEquipmentsWithRisk(): Promise<SecuritySnapshot[]> {
+  async getEquipmentsWithRisk() {
     const snapshots = await this.repo.find({
       where: { hasSecurityRisk: true },
       relations: ['equipment'],
       order: { capturedAt: 'DESC' },
     });
-    return this.latestPerEquipment(snapshots);
+    return this.toEquipmentList(this.latestPerEquipment(snapshots));
   }
 
-  async getEquipmentsWithoutAntivirus(): Promise<SecuritySnapshot[]> {
+  async getEquipmentsWithoutAntivirus() {
     const snapshots = await this.repo.find({
       where: { antivirusEnabled: false },
       relations: ['equipment'],
       order: { capturedAt: 'DESC' },
     });
-    return this.latestPerEquipment(snapshots);
+    return this.toEquipmentList(this.latestPerEquipment(snapshots));
   }
 
-  async getEquipmentsWithPendingUpdates(): Promise<SecuritySnapshot[]> {
+  async getEquipmentsWithPendingUpdates() {
     const snapshots = await this.repo.find({
       where: { isCriticalUpdatePending: true },
       relations: ['equipment'],
       order: { capturedAt: 'DESC' },
     });
-    return this.latestPerEquipment(snapshots);
+    return this.toEquipmentList(this.latestPerEquipment(snapshots));
   }
 
   private latestPerEquipment(snapshots: SecuritySnapshot[]): SecuritySnapshot[] {
@@ -128,6 +128,21 @@ export class SecurityService {
       if (seen.has(s.equipment.id)) return false;
       seen.add(s.equipment.id);
       return true;
+    });
+  }
+
+  /** Formato esperado por el front: id (equipo), code, name, ubication, status, lastConnection */
+  private toEquipmentList(snapshots: SecuritySnapshot[]) {
+    return snapshots.map(s => {
+      const e = s.equipment;
+      return {
+        id: e.id,
+        code: e.code ?? '',
+        name: e.name ?? '',
+        ubication: e.ubication ?? undefined,
+        status: e.status ?? 'sin-datos',
+        lastConnection: e.lastConnection?.toISOString?.() ?? e.lastConnection,
+      };
     });
   }
 

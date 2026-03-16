@@ -17,8 +17,8 @@ export class UpdateEquipmentDto {
     @IsOptional()
     laboratoryId?: number;
 
-    @ApiProperty({ description: 'Equipment status', enum: ['operativo', 'degradado', 'critico', 'sin-datos'], required: false })
-    @IsEnum(['operativo', 'degradado', 'critico', 'sin-datos'])
+    @ApiProperty({ description: 'Equipment status', enum: ['operativo', 'degradado', 'critico', 'conectado', 'sin-datos'], required: false })
+    @IsEnum(['operativo', 'degradado', 'critico', 'conectado', 'sin-datos'])
     @IsOptional()
     status?: string;
 

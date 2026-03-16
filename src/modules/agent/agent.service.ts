@@ -55,8 +55,15 @@ export class AgentService {
         this.performanceService.saveSnapshot(equipment, dto.performance, capturedAt, 'full'),
       ]);
 
-      // 3. Recalcular estado del equipo con hardware + seguridad
-      const newStatus = calculateEquipmentStatus(hardwareSnapshot, securitySnapshot);
+      // 3. Recalcular estado del equipo con hardware + seguridad (guardamos en español)
+      const newStatusEn = calculateEquipmentStatus(hardwareSnapshot, securitySnapshot);
+      const statusMap: Record<string, string> = {
+        operative: 'operativo',
+        degraded: 'degradado',
+        critical: 'critico',
+        'no-data': 'sin-datos',
+      };
+      const newStatus = statusMap[newStatusEn] ?? 'sin-datos';
 
       await this.equipmentRepo.update(equipment.id, {
         lastConnection: capturedAt,
@@ -70,8 +77,10 @@ export class AgentService {
           equipment, dto.performance, capturedAt, 'quick',
         );
       }
+      // Tiene conexión reciente pero no hay evaluación full → "conectado" (no "sin-datos")
       await this.equipmentRepo.update(equipment.id, {
         lastConnection: capturedAt,
+        status: 'conectado',
       });
     }
 

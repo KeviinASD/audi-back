@@ -25,7 +25,7 @@ export class Equipment {
     lastConnection: Date;         // Se actualiza con cada sync del agente
 
     @Column({ default: 'sin-datos' })
-    status: string;               // 'operativo' | 'degradado' | 'critico' | 'sin-datos'
+    status: string;               // 'operativo' | 'degradado' | 'critico' | 'conectado' | 'sin-datos'
 
     @CreateDateColumn()
     createdAt: Date;
