@@ -3,10 +3,14 @@
 import { Equipment } from 'src/modules/equipos/entities/equipment.entity';
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  ManyToOne, JoinColumn, CreateDateColumn, Index,
 } from 'typeorm';
 
 
+// Toda consulta sobre snapshots filtra por equipo y ordena por fecha
+// descendente ("la última captura de este equipo"). Sin este índice,
+// PostgreSQL escanea y ordena la tabla completa en cada llamada.
+@Index(['equipment', 'capturedAt'])
 @Entity('hardware_snapshots')
 export class HardwareSnapshot {
   @PrimaryGeneratedColumn()

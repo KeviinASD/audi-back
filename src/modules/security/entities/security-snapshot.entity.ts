@@ -2,7 +2,7 @@
 
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  ManyToOne, JoinColumn, CreateDateColumn, Index,
 } from 'typeorm';
 import { Equipment } from 'src/modules/equipos/entities/equipment.entity';
 
@@ -14,6 +14,9 @@ export interface LocalUserInfo {
   passwordNeverExpires: boolean;
 }
 
+// Ver nota en hardware-snapshot.entity.ts: sin este índice compuesto,
+// "la última captura de este equipo" ordena la tabla entera.
+@Index(['equipment', 'capturedAt'])
 @Entity('security_snapshots')
 export class SecuritySnapshot {
   @PrimaryGeneratedColumn()

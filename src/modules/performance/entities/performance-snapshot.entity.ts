@@ -2,7 +2,7 @@
 
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  ManyToOne, JoinColumn, CreateDateColumn, Index,
 } from 'typeorm';
 import { Equipment } from 'src/modules/equipos/entities/equipment.entity';
 
@@ -14,6 +14,8 @@ export interface ProcessInfo {
   status: string;
 }
 
+// Ver nota en hardware-snapshot.entity.ts.
+@Index(['equipment', 'capturedAt'])
 @Entity('performance_snapshots')
 export class PerformanceSnapshot {
   @PrimaryGeneratedColumn()

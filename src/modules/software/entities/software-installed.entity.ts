@@ -4,9 +4,13 @@ import { Equipment } from 'src/modules/equipos/entities/equipment.entity';
 import { LicenseStatus } from 'src/common/enums/license-status.enum';
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  ManyToOne, JoinColumn, CreateDateColumn, Index,
 } from 'typeorm';
 
+// Ver nota en hardware-snapshot.entity.ts. Acá pesa aún más: el software
+// guarda una fila por programa instalado, así que la tabla es la más
+// grande de las cuatro.
+@Index(['equipment', 'capturedAt'])
 @Entity('software_installed')
 export class SoftwareInstalled {
   @PrimaryGeneratedColumn()
